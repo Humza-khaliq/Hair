@@ -265,6 +265,10 @@ def create_app() -> Flask:
                 info["error"] = str(exc)
         return jsonify(info)
 
+    @app.route("/health")
+    def health():
+        return "ok", 200
+
     @app.route("/debug-config")
     def debug_config():  # pragma: no cover - diagnostics
         creds_path = os.environ.get(
