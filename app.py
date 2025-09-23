@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import logging
 import os
 import sqlite3
@@ -180,29 +181,36 @@ def create_app() -> Flask:
     @app.route("/auth")
     def start_google_auth():
         if not GOOGLE_LIBRARIES_AVAILABLE:
-            flash("Google client libraries are not installed on the server.", "error")
-            return redirect(url_for("book"))
+            app.logger.error("Google client libraries missing; cannot start auth flow.")
+            return ("/auth failed: Google client libraries not installed", 500)
 
-        credentials_path = materialize_google_credentials(app)
-        if not credentials_path.exists():
-            flash(
-                "Google credentials file missing. Upload credentials.json to continue.",
-                "error",
+        try:
+            credentials_path = materialize_google_credentials(app)
+            if not credentials_path.exists():
+                raise FileNotFoundError(
+                    f"credentials.json not found at {credentials_path}."
+                )
+
+            with credentials_path.open("r", encoding="utf-8") as fh:
+                client_payload = json.load(fh)
+            if not any(key in client_payload for key in ("web", "installed")):
+                raise ValueError("Invalid OAuth client JSON: expected top key 'web' or 'installed'.")
+
+            flow = Flow.from_client_config(
+                client_payload,
+                scopes=SCOPES,
+                redirect_uri=url_for("google_oauth_callback", _external=True),
             )
-            return redirect(url_for("book"))
-
-        flow = Flow.from_client_secrets_file(
-            str(credentials_path),
-            scopes=SCOPES,
-            redirect_uri=url_for("google_oauth_callback", _external=True),
-        )
-        authorization_url, state = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true",
-            prompt="consent",
-        )
-        session["google_auth_state"] = state
-        return redirect(authorization_url)
+            authorization_url, state = flow.authorization_url(
+                access_type="offline",
+                include_granted_scopes="true",
+                prompt="consent",
+            )
+            session["google_auth_state"] = state
+            return redirect(authorization_url)
+        except Exception as exc:  # pragma: no cover - runtime protection
+            app.logger.exception("Auth init failed: %s", exc)
+            return (f"/auth failed: {exc}", 500)
 
     @app.route("/oauth2callback")
     def google_oauth_callback():
@@ -253,6 +261,29 @@ def create_app() -> Flask:
                 creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
                 info["token_valid"] = bool(creds and creds.valid)
                 info["has_refresh_token"] = bool(getattr(creds, "refresh_token", None))
+            except Exception as exc:  # pragma: no cover
+                info["error"] = str(exc)
+        return jsonify(info)
+
+    @app.route("/debug-config")
+    def debug_config():  # pragma: no cover - diagnostics
+        creds_path = os.environ.get(
+            "GOOGLE_CREDENTIALS_FILE", str(BASE_DIR / "credentials.json")
+        )
+        info = {
+            "creds_path": creds_path,
+            "creds_exists": os.path.exists(creds_path),
+            "token_path": app.config.get("GOOGLE_TOKEN_FILE"),
+            "has_secret_key": bool(os.environ.get("FLASK_SECRET_KEY")),
+        }
+        if info["creds_exists"]:
+            try:
+                with open(creds_path, "rb") as fh:
+                    first_byte = fh.read(1)
+                info["starts_with_brace"] = first_byte == b"{"
+                with open(creds_path, "r", encoding="utf-8") as fh:
+                    payload = json.load(fh)
+                info["top_keys"] = list(payload.keys())
             except Exception as exc:  # pragma: no cover
                 info["error"] = str(exc)
         return jsonify(info)

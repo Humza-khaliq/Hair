@@ -120,5 +120,6 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
    - If you add secret files, use the **Secret Files** section: `credentials.json` and optionally `token.json`. Render mounts them at `/etc/secrets/<name>`.
 7. After the token is stored, bookings sync automatically. Render provides an HTTPS URL, and the service will stay reachable without your laptop.
 8. Optional: hit `/debug-auth` on your deployment to verify the token path, validity, and refresh token status.
+9. Optional: check `/debug-config` to confirm Render can see `credentials.json`, the JSON structure, and that your `FLASK_SECRET_KEY` is set.
 
 _Alternative free hosts:_ Fly.io (via `fly launch`) or Railway (Docker deploy). Both accept this Dockerfile with minor config tweaks if you prefer other platforms.
