@@ -98,6 +98,7 @@ There are no automated tests bundled. Before deploying, manually validate:
 - Build the production image locally: `docker build -t fade-by-humz .`
 - Run it: `docker run --rm -p 8080:8080 -e PORT=8080 fade-by-humz`
 - The app listens on `0.0.0.0:8080` inside the container and serves via Gunicorn.
+- The Gunicorn command respects the `PORT` environment variable (Render sets this automatically).
 - Mount or copy `credentials.json` / `token.json` if you want Calendar sync while running in Docker. Alternatively set `GOOGLE_CREDENTIALS_JSON` to the raw JSON or a base64-encoded string.
 
 ## Deploying Free on Render
