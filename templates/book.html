@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment{% endblock title %}
+{% block content %}
+<section class="page-hero">
+    <h1>Book Your Appointment</h1>
+    <p>Lock in your next fade with just a few taps. Choose your service and time that fits your flow.</p>
+</section>
+
+<section class="booking-section">
+    <form class="booking-form" method="post" action="{{ url_for('book') }}">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Your name" required>
+        </div>
+        <div class="form-group">
+            <label for="service_type">Service Type</label>
+            <select id="service_type" name="service_type" required>
+                <option value="" disabled selected>Select your service</option>
+                {% for service in service_types %}
+                    <option value="{{ service }}">{{ service }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="appointment_date">Date</label>
+                <input type="date" id="appointment_date" name="appointment_date" required>
+            </div>
+            <div class="form-group">
+                <label for="appointment_time">Time</label>
+                <input type="time" id="appointment_time" name="appointment_time" required>
+            </div>
+        </div>
+        <button class="btn-primary" type="submit">Book Your Fade Now</button>
+    </form>
+    <aside class="booking-info">
+        <h3>Heads up!</h3>
+        <p>Your booking is saved instantly and synced to Google Calendar as soon as credentials are connected.</p>
+        <div class="info-card">
+            <h4>Need to reschedule?</h4>
+            <p>Reply to your confirmation email or send a quick DM. We'll get you set up.</p>
+        </div>
+        <p class="address">
+            Studio Location:<br>
+            Presidential Drive, Apartment #7<br>
+            Amherst, MA, 01003
+        </p>
+    </aside>
+</section>
+{% endblock content %}

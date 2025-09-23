@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock title %}
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Fade By Humz</h1>
+        <p>Precision fades, razor-sharp lineups, and elevated style tailored for every client.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('book') }}" class="btn-primary">Book Your Fade Now</a>
+            <a href="{{ url_for('services') }}" class="btn-secondary">Discover Services</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <h2>Studio Hours</h2>
+        <ul>
+            <li>Mon - Thu: 10:00 AM – 7:00 PM</li>
+            <li>Fri - Sat: 9:00 AM – 8:00 PM</li>
+            <li>Sunday: By Appointment</li>
+        </ul>
+        <p class="hero-address">Presidential Drive, Apartment #7, Amherst, MA, 01003</p>
+    </div>
+</section>
+
+<section class="about">
+    <div class="about-text">
+        <h2>Fresh Fades. Fresh Confidence.</h2>
+        <p>Fade By Humz blends artistry with precision to deliver modern, trend-forward cuts that turn heads. From skin fades and sharp lineups to premium beard work, each session is tailored to your vibe and lifestyle.</p>
+    </div>
+    <div class="about-highlights">
+        <div class="highlight">
+            <span class="icon">✂️</span>
+            <h3>Precision Detailing</h3>
+            <p>Every cut is sculpted with focus on symmetry, texture, and flow.</p>
+        </div>
+        <div class="highlight">
+            <span class="icon">🔥</span>
+            <h3>Trend-Smart Styles</h3>
+            <p>Stay ahead with sharp fades and modern looks tailored to you.</p>
+        </div>
+        <div class="highlight">
+            <span class="icon">💈</span>
+            <h3>Premium Experience</h3>
+            <p>Relaxed vibe, pro setup, and detail-driven service every visit.</p>
+        </div>
+    </div>
+</section>
+
+<section class="services-preview">
+    <header>
+        <h2>Featured Services</h2>
+        <p>Hand-picked cuts and grooming designed to elevate your look.</p>
+    </header>
+    <div class="service-grid">
+        {% for service in service_types[:3] %}
+            <div class="service-card">
+                <h3>{{ service }}</h3>
+                <p>Dialed-in fades and grooming with signature detail.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="cta-banner">
+    <div class="cta-content">
+        <h2>Ready for a next-level fade?</h2>
+        <p>Reserve your seat and lock in a fresh look that keeps you photo-ready 24/7.</p>
+    </div>
+    <a href="{{ url_for('book') }}" class="btn-primary">Book Your Fade Now</a>
+</section>
+{% endblock content %}

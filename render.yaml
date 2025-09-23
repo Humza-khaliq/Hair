@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: fade-by-humz
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: TIME_ZONE
+        value: America/New_York
+      - key: SECRET_KEY
+        generateValue: true

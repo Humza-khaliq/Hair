@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Services{% endblock title %}
+{% block content %}
+<section class="page-hero">
+    <h1>Services</h1>
+    <p>Signature cuts, refined grooming, and premium experience crafted by Humz.</p>
+</section>
+
+<section class="service-details">
+    <div class="service-list">
+        {% for service in services %}
+            <article class="service-item">
+                <div class="service-header">
+                    <h2>{{ service.name }}</h2>
+                    <span class="service-price">{{ service.price }}</span>
+                </div>
+                <p class="service-description">{{ service.description }}</p>
+                <div class="service-meta">
+                    <span>{{ service.duration }}</span>
+                    <span>Fade By Humz Studio</span>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <aside class="service-sidebar">
+        <h3>Why Book With Humz?</h3>
+        <ul>
+            <li>Precision fades with artistry and consistency</li>
+            <li>Custom consultations to match your personal style</li>
+            <li>Relaxed environment with pro-grade products</li>
+            <li>Appointments synced to your calendar instantly</li>
+        </ul>
+        <a href="{{ url_for('book') }}" class="btn-primary">Book Your Fade Now</a>
+    </aside>
+</section>
+{% endblock content %}

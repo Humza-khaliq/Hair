@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Location{% endblock title %}
+{% block content %}
+<section class="page-hero">
+    <h1>Our Studio</h1>
+    <p>Find Fade By Humz in the heart of Amherst. Pull up, get fresh, and roll out looking sharp.</p>
+</section>
+
+<section class="location-wrap">
+    <div class="map-container">
+        <iframe
+            title="Fade By Humz Location"
+            src="https://www.google.com/maps?q=Presidential+Drive,+Apartment+%237,+Amherst,+MA,+01003&output=embed"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="location-details">
+        <h2>Visit Us</h2>
+        <p><strong>Address</strong><br>Presidential Drive, Apartment #7<br>Amherst, MA, 01003</p>
+        <p><strong>Parking</strong><br>Guest parking available nearby. Let us know if you need directions.</p>
+        <p><strong>Vibe</strong><br>Modern studio with clean aesthetics, curated beats, and barber-grade products.</p>
+    </div>
+</section>
+{% endblock content %}

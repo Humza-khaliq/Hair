@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.sqlite
+instance/bookings.db
+flask.log
+localtunnel.log
+token.json
+credentials.json
+.env
+.DS_Store
+.git
