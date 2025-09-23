@@ -100,6 +100,7 @@ There are no automated tests bundled. Before deploying, manually validate:
 - The app listens on `0.0.0.0:8080` inside the container and serves via Gunicorn.
 - The Gunicorn command respects the `PORT` environment variable (Render sets this automatically).
 - Mount or copy `credentials.json` / `token.json` if you want Calendar sync while running in Docker. Alternatively set `GOOGLE_CREDENTIALS_JSON` to the raw JSON or a base64-encoded string.
+- Health check endpoint available at `/health` (returns `ok`) for uptime monitoring.
 
 ## Deploying Free on Render
 

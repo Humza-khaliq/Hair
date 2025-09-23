@@ -477,7 +477,11 @@ app = create_app()
 
 def main() -> None:
     debug_enabled = os.environ.get("FLASK_DEBUG", "0") in {"1", "true", "True"}
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=debug_enabled)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "5000")),
+        debug=debug_enabled,
+    )
 
 
 if __name__ == "__main__":
