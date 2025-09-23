@@ -324,8 +324,9 @@ def update_google_event_id(app: Flask, booking_id: int, event_id: Optional[str])
         conn.commit()
 
 
+app = create_app()
+
 def main() -> None:
-    app = create_app()
     debug_enabled = os.environ.get("FLASK_DEBUG", "0") in {"1", "true", "True"}
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=debug_enabled)
 

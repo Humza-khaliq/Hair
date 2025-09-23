@@ -1,21 +1,17 @@
 FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8080
-
 WORKDIR /app
 
+# Install dependencies first for better layer caching
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application code and assets explicitly
+COPY app.py ./
+COPY templates ./templates
+COPY static ./static
 
-RUN addgroup --system app && adduser --system --ingroup app app \
- && chown -R app:app /app
+# Render (and many platforms) provide the PORT env var; default to 8080
+ENV PORT=8080
 
-USER app
-
-EXPOSE 8080
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:create_app()"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080", "--workers", "2"]
