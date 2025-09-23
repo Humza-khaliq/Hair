@@ -66,7 +66,7 @@ The app can push confirmed bookings to Google Calendar. Follow these steps to en
    | `SECRET_KEY` | Flask session key for flash messages | `change-this-secret` |
    | `TIME_ZONE` | Time zone used for calendar events | `America/New_York` |
    | `GOOGLE_CREDENTIALS_FILE` | Path to OAuth client (`credentials.json`) | `<project>/credentials.json` |
-   | `GOOGLE_TOKEN_FILE` | Path to store OAuth token (`token.json`) | `<project>/token.json` |
+   | `GOOGLE_TOKEN_FILE` | Path to store OAuth token (`token.json`) | `instance/token.json` |
    | `GOOGLE_CREDENTIALS_JSON` | Optional raw/base64 OAuth client JSON (auto-written to file) | _unset_ |
    | `GOOGLE_CALENDAR_ID` | Target calendar ID (`primary` or specific calendar) | `primary` |
    | `BOOKING_DURATION_MINUTES` | Length of each appointment (minutes) | `45` |
@@ -110,12 +110,14 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
 3. Choose the repo, select the **Docker** environment, and Render will auto-detect `render.yaml`.
 4. Set the instance type to **Free** and pick a region near your clients.
 5. Add the following environment variables under **Environment**:
-   - `PORT=8080` (Render injects this automatically when `render.yaml` is used, but double-check).
    - `SECRET_KEY=<your-random-secret>`
    - `TIME_ZONE=America/New_York`
    - `GOOGLE_CALENDAR_ID=primary` (or a specific calendar ID)
+   - (optional) `GOOGLE_CREDENTIALS_FILE=/etc/secrets/credentials.json` if you drop in the secret file below.
    - `GOOGLE_CREDENTIALS_JSON` with either the raw JSON (multi-line allowed) or a base64 version of `credentials.json`. To base64 encode locally: `base64 credentials.json > credentials.b64`.
+   - (optional) `GOOGLE_TOKEN_FILE=/etc/secrets/token.json` if you upload a persistent token file.
 6. Deploy. On first booking Render will open an OAuth window in the logs—use the **Shell** tab → `python` REPL to run the OAuth flow once, or run the app locally to generate `token.json` and upload it as a Render Secret File.
+   - If you add secret files, use the **Secret Files** section: `credentials.json` and optionally `token.json`. Render mounts them at `/etc/secrets/<name>`.
 7. After the token is stored, bookings sync automatically. Render provides an HTTPS URL, and the service will stay reachable without your laptop.
 
 _Alternative free hosts:_ Fly.io (via `fly launch`) or Railway (Docker deploy). Both accept this Dockerfile with minor config tweaks if you prefer other platforms.

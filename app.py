@@ -39,6 +39,10 @@ def create_app() -> Flask:
     database_path = BASE_DIR / "instance" / "bookings.db"
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
+    default_token_path = os.environ.get("GOOGLE_TOKEN_FILE")
+    if not default_token_path:
+        default_token_path = str(database_path.parent / "token.json")
+
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY", "change-this-secret"),
         DATABASE=str(database_path),
@@ -46,9 +50,7 @@ def create_app() -> Flask:
         GOOGLE_CREDENTIALS_FILE=os.environ.get(
             "GOOGLE_CREDENTIALS_FILE", str(BASE_DIR / "credentials.json")
         ),
-        GOOGLE_TOKEN_FILE=os.environ.get(
-            "GOOGLE_TOKEN_FILE", str(BASE_DIR / "token.json")
-        ),
+        GOOGLE_TOKEN_FILE=default_token_path,
         GOOGLE_CALENDAR_ID=os.environ.get("GOOGLE_CALENDAR_ID", "primary"),
         BOOKING_DURATION_MINUTES=int(os.environ.get("BOOKING_DURATION_MINUTES", "45")),
     )
@@ -310,6 +312,7 @@ def load_google_credentials(app: Flask, credentials_path: Path) -> Credentials:
         else:
             flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), SCOPES)
             creds = flow.run_local_server(port=0, prompt="consent")
+        token_path.parent.mkdir(parents=True, exist_ok=True)
         token_path.write_text(creds.to_json())
         app.logger.info("Stored refreshed Google OAuth token at %s", token_path)
 
