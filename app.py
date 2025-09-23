@@ -51,6 +51,8 @@ def create_app() -> Flask:
     default_token_path = os.environ.get("GOOGLE_TOKEN_FILE")
     if not default_token_path:
         default_token_path = str(database_path.parent / "token.json")
+        if os.environ.get("RENDER"):
+            default_token_path = "/tmp/token.json"
 
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY", "change-this-secret"),
