@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import logging
 import base64
+import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta
@@ -9,11 +9,20 @@ from pathlib import Path
 from typing import Optional
 
 import pytz
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+    jsonify,
+)
 
 try:
     from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google_auth_oauthlib.flow import Flow
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
 
@@ -110,6 +119,7 @@ def create_app() -> Flask:
 
     @app.route("/book", methods=["GET", "POST"])
     def book():
+        calendar_connected = token_exists(app)
         if request.method == "POST":
             name = request.form.get("name", "").strip()
             service_type = request.form.get("service_type", "").strip()
@@ -151,7 +161,11 @@ def create_app() -> Flask:
 
             return redirect(url_for("book"))
 
-        return render_template("book.html", service_types=SERVICE_TYPES)
+        return render_template(
+            "book.html",
+            service_types=SERVICE_TYPES,
+            calendar_connected=calendar_connected,
+        )
 
     @app.route("/location")
     def location():
@@ -160,6 +174,86 @@ def create_app() -> Flask:
     @app.route("/contact")
     def contact():
         return render_template("contact.html")
+
+    @app.route("/auth")
+    def start_google_auth():
+        if not GOOGLE_LIBRARIES_AVAILABLE:
+            flash("Google client libraries are not installed on the server.", "error")
+            return redirect(url_for("book"))
+
+        credentials_path = materialize_google_credentials(app)
+        if not credentials_path.exists():
+            flash(
+                "Google credentials file missing. Upload credentials.json to continue.",
+                "error",
+            )
+            return redirect(url_for("book"))
+
+        flow = Flow.from_client_secrets_file(
+            str(credentials_path),
+            scopes=SCOPES,
+            redirect_uri=url_for("google_oauth_callback", _external=True),
+        )
+        authorization_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+        )
+        session["google_auth_state"] = state
+        return redirect(authorization_url)
+
+    @app.route("/oauth2callback")
+    def google_oauth_callback():
+        if not GOOGLE_LIBRARIES_AVAILABLE:
+            flash("Google client libraries are not installed on the server.", "error")
+            return redirect(url_for("book"))
+
+        credentials_path = materialize_google_credentials(app)
+        if not credentials_path.exists():
+            flash(
+                "Google credentials file missing. Upload credentials.json to continue.",
+                "error",
+            )
+            return redirect(url_for("book"))
+
+        expected_state = session.pop("google_auth_state", None)
+        incoming_state = request.args.get("state")
+        if expected_state and incoming_state != expected_state:
+            flash("State mismatch during Google OAuth. Please try again.", "error")
+            return redirect(url_for("book"))
+
+        flow = Flow.from_client_secrets_file(
+            str(credentials_path),
+            scopes=SCOPES,
+            redirect_uri=url_for("google_oauth_callback", _external=True),
+        )
+
+        try:
+            flow.fetch_token(authorization_response=request.url)
+            creds = flow.credentials
+            persist_google_token(app, creds)
+            flash("Google Calendar connected!", "success")
+        except Exception as exc:  # pragma: no cover - runtime protection
+            app.logger.exception("OAuth callback failed: %s", exc)
+            flash("Failed to complete Google authorization. Please try again.", "error")
+
+        return redirect(url_for("book"))
+
+    @app.route("/debug-auth")
+    def debug_auth():  # pragma: no cover - diagnostics
+        token_path = Path(app.config["GOOGLE_TOKEN_FILE"])
+        info = {
+            "token_path": str(token_path),
+            "token_exists": token_path.exists(),
+        }
+        if token_path.exists() and GOOGLE_LIBRARIES_AVAILABLE:
+            try:
+                creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+                info["token_valid"] = bool(creds and creds.valid)
+                info["has_refresh_token"] = bool(getattr(creds, "refresh_token", None))
+            except Exception as exc:  # pragma: no cover
+                info["error"] = str(exc)
+        return jsonify(info)
 
     return app
 
@@ -241,6 +335,18 @@ def materialize_google_credentials(app: Flask) -> Path:
     return credentials_path
 
 
+def persist_google_token(app: Flask, creds: Credentials) -> Path:
+    token_path = Path(app.config["GOOGLE_TOKEN_FILE"])
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(creds.to_json())
+    app.logger.info("Stored Google OAuth token at %s", token_path)
+    return token_path
+
+
+def token_exists(app: Flask) -> bool:
+    return Path(app.config["GOOGLE_TOKEN_FILE"]).exists()
+
+
 def create_calendar_event(app: Flask, booking_id: int) -> Optional[str]:
     """Push a booking to Google Calendar if credentials are configured."""
     booking = fetch_booking(app, booking_id)
@@ -294,6 +400,9 @@ def create_calendar_event(app: Flask, booking_id: int) -> Optional[str]:
         update_google_event_id(app, booking_id, created_event.get("id"))
         app.logger.info("Created Google Calendar event %s for booking %s", created_event.get("id"), booking_id)
         return created_event.get("id")
+    except FileNotFoundError:
+        app.logger.warning("Google OAuth token missing; skipping calendar sync.")
+        return None
     except Exception as exc:  # pragma: no cover - runtime protection
         app.logger.exception("Failed to create Google Calendar event: %s", exc)
         return None
@@ -301,22 +410,22 @@ def create_calendar_event(app: Flask, booking_id: int) -> Optional[str]:
 
 def load_google_credentials(app: Flask, credentials_path: Path) -> Credentials:
     token_path = Path(app.config["GOOGLE_TOKEN_FILE"])
-    creds: Optional[Credentials] = None
+    if not token_path.exists():
+        raise FileNotFoundError(
+            f"Google token file not found at {token_path}. Run the /auth flow first."
+        )
 
-    if token_path.exists():
-        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+    creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), SCOPES)
-            creds = flow.run_local_server(port=0, prompt="consent")
-        token_path.parent.mkdir(parents=True, exist_ok=True)
-        token_path.write_text(creds.to_json())
-        app.logger.info("Stored refreshed Google OAuth token at %s", token_path)
+    if creds.valid:
+        return creds
 
-    return creds
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        persist_google_token(app, creds)
+        return creds
+
+    raise RuntimeError("Google credentials invalid and no refresh token available.")
 
 
 def update_google_event_id(app: Flask, booking_id: int, event_id: Optional[str]) -> None:

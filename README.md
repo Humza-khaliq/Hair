@@ -56,8 +56,8 @@ The app can push confirmed bookings to Google Calendar. Follow these steps to en
    - Download the OAuth client JSON and save it as `credentials.json` in the project root (or anywhere else – see environment variables below).
 
 2. **First-time authorization**
-   - Run the Flask app locally.
-   - Book a test appointment. The server opens a browser window prompting you to sign in and grant access to the calendar.
+   - Run the Flask app locally or deploy it to Render.
+   - Visit `/auth` (or use the “Connect Google Calendar” banner on the booking page) to launch Google’s consent screen.
    - After consent, the refresh token is stored in `token.json` (configurable). Future bookings will sync automatically.
 
 3. **Environment variables (optional)**
@@ -119,5 +119,6 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
 6. Deploy. On first booking Render will open an OAuth window in the logs—use the **Shell** tab → `python` REPL to run the OAuth flow once, or run the app locally to generate `token.json` and upload it as a Render Secret File.
    - If you add secret files, use the **Secret Files** section: `credentials.json` and optionally `token.json`. Render mounts them at `/etc/secrets/<name>`.
 7. After the token is stored, bookings sync automatically. Render provides an HTTPS URL, and the service will stay reachable without your laptop.
+8. Optional: hit `/debug-auth` on your deployment to verify the token path, validity, and refresh token status.
 
 _Alternative free hosts:_ Fly.io (via `fly launch`) or Railway (Docker deploy). Both accept this Dockerfile with minor config tweaks if you prefer other platforms.

@@ -8,6 +8,12 @@
 
 <section class="booking-section">
     <form class="booking-form" method="post" action="{{ url_for('book') }}">
+        {% if not calendar_connected %}
+            <div class="notice warning">
+                <strong>Google Calendar not connected.</strong>
+                <a href="{{ url_for('start_google_auth') }}">Connect now</a> so new appointments sync automatically.
+            </div>
+        {% endif %}
         <div class="form-group">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="Your name" required>
