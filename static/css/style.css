@@ -396,25 +396,6 @@ main {
     margin-bottom: 1.25rem;
 }
 
-.notice {
-    padding: 0.85rem 1rem;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.05);
-    font-size: 0.95rem;
-}
-
-.notice a {
-    color: var(--accent);
-    font-weight: 600;
-}
-
-.notice.warning {
-    border-color: rgba(241, 196, 15, 0.4);
-    color: #f9d26a;
-}
-
 .form-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

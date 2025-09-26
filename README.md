@@ -42,38 +42,26 @@ A modern, responsive booking website for the Fade By Humz barber studio built wi
    Visit `http://127.0.0.1:5000` to explore the site.
 
 3. **Database**
-   - SQLite is used to persist bookings locally. The database file (`instance/bookings.db`) is created automatically with the `bookings` table when the app starts.
+   - SQLite is used to persist bookings locally. The database file (`instance/bookings.db`) is created automatically with the `bookings` table when the app starts. On Render’s free tier the disk is ephemeral, so export data periodically or wire up a free remote store (see below).
 
-## Google Calendar Integration
+## Free & Simple Booking Storage Options
 
-The app can push confirmed bookings to Google Calendar. Follow these steps to enable sync:
+Everything now works without Google APIs. Bookings are saved locally out of the box, but you can plug into a free cloud backend with only a few lines of code:
 
-1. **Create Google Cloud OAuth credentials**
-   - Visit the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-   - Create a new project (or reuse an existing one).
-   - Enable the **Google Calendar API** for the project.
-   - Create an **OAuth client ID** of type **Desktop App**.
-   - Download the OAuth client JSON and save it as `credentials.json` in the project root (or anywhere else – see environment variables below).
+| Option | Why it’s easy | How to integrate |
+| --- | --- | --- |
+| **Stay on SQLite** | Zero setup; perfect for demos | Export `instance/bookings.db` occasionally. |
+| **Supabase (Postgres)** | Free tier, REST + SQL studio | Create a `bookings` table and switch the connection string in `app.py`. |
+| **Google Sheets** | Looks like a spreadsheet; free | Use [`gspread`](https://github.com/burnash/gspread) to append rows inside `save_booking`. |
+| **Airtable / Notion DB** | Friendly UI for manual edits | Replace `save_booking` with their REST API (both have free tiers). |
 
-2. **First-time authorization**
-   - Run the Flask app locally or deploy it to Render.
-   - Visit `/auth` (or use the “Connect Google Calendar” banner on the booking page) to launch Google’s consent screen.
-   - After consent, the refresh token is stored in `token.json` (configurable). Future bookings will sync automatically.
+Choose whichever feels the most “no fuss” for you—each is free, and none require leaving your laptop on.
 
-3. **Environment variables (optional)**
-   | Variable | Description | Default |
-   | --- | --- | --- |
-   | `SECRET_KEY` | Flask session key for flash messages | `change-this-secret` |
-   | `TIME_ZONE` | Time zone used for calendar events | `America/New_York` |
-   | `GOOGLE_CREDENTIALS_FILE` | Path to OAuth client (`credentials.json`) | `<project>/credentials.json` |
-   | `GOOGLE_TOKEN_FILE` | Path to store OAuth token (`token.json`) | `instance/token.json` |
-   | `GOOGLE_CREDENTIALS_JSON` | Optional raw/base64 OAuth client JSON (auto-written to file) | _unset_ |
-   | `GOOGLE_CALENDAR_ID` | Target calendar ID (`primary` or specific calendar) | `primary` |
-   | `BOOKING_DURATION_MINUTES` | Length of each appointment (minutes) | `45` |
+### Environment variables
 
-4. **Deployment tips**
-   - For production, pre-authorize on the deployment environment so the OAuth prompt doesn’t appear in headless mode.
-   - Consider using a service account if you move to a team calendar and can delegate domain-wide authority.
+| Variable | Description | Default |
+| --- | --- | --- |
+| `SECRET_KEY` | Flask session key for flash messages | `change-this-secret` |
 
 ## Styling & Customization
 
@@ -86,20 +74,18 @@ The app can push confirmed bookings to Google Calendar. Follow these steps to en
 There are no automated tests bundled. Before deploying, manually validate:
 
 - Booking creation and validation
-- Google Calendar sync (when credentials are configured)
 - Responsive layout (mobile, tablet, desktop)
 
 ## Notes
 
-- The Google client libraries are optional—if they are not installed or credentials are missing, the app gracefully stores bookings locally and flashes a reminder to connect Calendar.
-- Store secrets securely (e.g., environment variables or configuration managers) before deploying.
+- Treat `instance/bookings.db` like an application secret—store it somewhere safe or connect to a managed database if you need long-term persistence.
+- Store secrets securely (environment variables, Render Secret Files, etc.) before deploying.
 ## Docker
 
 - Build the production image locally: `docker build -t fade-by-humz .`
 - Run it: `docker run --rm -p 8080:8080 -e PORT=8080 fade-by-humz`
 - The app listens on `0.0.0.0:8080` inside the container and serves via Gunicorn.
 - The Gunicorn command respects the `PORT` environment variable (Render sets this automatically).
-- Mount or copy `credentials.json` / `token.json` if you want Calendar sync while running in Docker. Alternatively set `GOOGLE_CREDENTIALS_JSON` to the raw JSON or a base64-encoded string.
 - Health check endpoint available at `/health` (returns `ok`) for uptime monitoring.
 
 ## Deploying Free on Render
@@ -112,15 +98,8 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
 4. Set the instance type to **Free** and pick a region near your clients.
 5. Add the following environment variables under **Environment**:
    - `SECRET_KEY=<your-random-secret>`
-   - `TIME_ZONE=America/New_York`
-   - `GOOGLE_CALENDAR_ID=primary` (or a specific calendar ID)
-   - (optional) `GOOGLE_CREDENTIALS_FILE=/etc/secrets/credentials.json` if you drop in the secret file below.
-   - `GOOGLE_CREDENTIALS_JSON` with either the raw JSON (multi-line allowed) or a base64 version of `credentials.json`. To base64 encode locally: `base64 credentials.json > credentials.b64`.
-   - (optional) `GOOGLE_TOKEN_FILE=/etc/secrets/token.json` if you upload a persistent token file.
-6. Deploy. On first booking Render will open an OAuth window in the logs—use the **Shell** tab → `python` REPL to run the OAuth flow once, or run the app locally to generate `token.json` and upload it as a Render Secret File.
-   - If you add secret files, use the **Secret Files** section: `credentials.json` and optionally `token.json`. Render mounts them at `/etc/secrets/<name>`.
-7. After the token is stored, bookings sync automatically. Render provides an HTTPS URL, and the service will stay reachable without your laptop.
-8. Optional: hit `/debug-auth` on your deployment to verify the token path, validity, and refresh token status.
-9. Optional: check `/debug-config` to confirm Render can see `credentials.json`, the JSON structure, and that your `FLASK_SECRET_KEY` is set.
+   - (optional) `DATABASE_URL=<supabase-or-other-connection>` if you switch away from SQLite.
+6. Deploy. The health check at `/health` will help you confirm the instance is awake.
+7. Optional: wire in Supabase/Sheets by updating `save_booking` once you have API keys.
 
 _Alternative free hosts:_ Fly.io (via `fly launch`) or Railway (Docker deploy). Both accept this Dockerfile with minor config tweaks if you prefer other platforms.

@@ -8,12 +8,6 @@
 
 <section class="booking-section">
     <form class="booking-form" method="post" action="{{ url_for('book') }}">
-        {% if not calendar_connected %}
-            <div class="notice warning">
-                <strong>Google Calendar not connected.</strong>
-                <a href="{{ url_for('start_google_auth') }}">Connect now</a> so new appointments sync automatically.
-            </div>
-        {% endif %}
         <div class="form-group">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="Your name" required>
@@ -41,10 +35,10 @@
     </form>
     <aside class="booking-info">
         <h3>Heads up!</h3>
-        <p>Your booking is saved instantly and synced to Google Calendar as soon as credentials are connected.</p>
+        <p>Your booking is saved instantly in our system. We'll reach out with a text or email to lock in every detail.</p>
         <div class="info-card">
             <h4>Need to reschedule?</h4>
-            <p>Reply to your confirmation email or send a quick DM. We'll get you set up.</p>
+            <p>Reply to your confirmation message or send a quick DM. We'll get you set up.</p>
         </div>
         <p class="address">
             Studio Location:<br>
