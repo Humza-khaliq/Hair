@@ -55,13 +55,32 @@ Everything now works without Google APIs. Bookings are saved locally out of the 
 | **Google Sheets** | Looks like a spreadsheet; free | Use [`gspread`](https://github.com/burnash/gspread) to append rows inside `save_booking`. |
 | **Airtable / Notion DB** | Friendly UI for manual edits | Replace `save_booking` with their REST API (both have free tiers). |
 
-Choose whichever feels the most “no fuss” for you—each is free, and none require leaving your laptop on.
+Choose whichever feels the most “no fuss” for you—each is free, and none require leaving your laptop on. The default project writes to SQLite and, when configured, also appends rows to a Google Sheet for easy viewing.
+
+### Connecting to Google Sheets (service account)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a new **service account** for your project (Calendar API access is not required).
+2. Generate a JSON key and keep it safe:
+   - Save it locally as `service_account.json` (but never commit it), **or**
+   - Base64‑encode it (`base64 service_account.json > service_account.b64`) and set `GOOGLE_SERVICE_ACCOUNT_JSON` to the resulting string.
+3. Create a Google Sheet dedicated to bookings and note the sheet ID (the long string in the sheet URL).
+4. Share the sheet with the service account email (e.g., `fade-by-humz@project.iam.gserviceaccount.com`) with **Editor** access.
+5. Set the environment variables:
+   - `GOOGLE_SHEET_ID=<your-sheet-id>`
+   - `GOOGLE_SERVICE_ACCOUNT_FILE` **or** `GOOGLE_SERVICE_ACCOUNT_JSON`
+   - (optional) `GOOGLE_SHEET_WORKSHEET=Bookings`
+
+Every booking submission now appends a row to the sheet with timestamps, service details, and scheduled time. If the sheet is not configured the app quietly falls back to storing data in SQLite only.
 
 ### Environment variables
 
 | Variable | Description | Default |
 | --- | --- | --- |
 | `SECRET_KEY` | Flask session key for flash messages | `change-this-secret` |
+| `GOOGLE_SERVICE_ACCOUNT_FILE` | Optional path to service account JSON for Sheets | `<project>/service_account.json` |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Optional raw/base64 service account JSON | _unset_ |
+| `GOOGLE_SHEET_ID` | Target Google Sheet ID (required for cloud sync) | _unset_ |
+| `GOOGLE_SHEET_WORKSHEET` | Worksheet/tab name inside the sheet | `Bookings` |
 
 ## Styling & Customization
 
@@ -99,6 +118,7 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
 5. Add the following environment variables under **Environment**:
    - `SECRET_KEY=<your-random-secret>`
    - (optional) `DATABASE_URL=<supabase-or-other-connection>` if you switch away from SQLite.
+   - (optional) `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (or `GOOGLE_SERVICE_ACCOUNT_FILE`), and `GOOGLE_SHEET_WORKSHEET` if you want automatic Google Sheets sync.
 6. Deploy. The health check at `/health` will help you confirm the instance is awake.
 7. Optional: wire in Supabase/Sheets by updating `save_booking` once you have API keys.
 
