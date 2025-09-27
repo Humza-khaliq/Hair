@@ -106,6 +106,7 @@ def create_app() -> Flask:
 
     configure_logging(app)
     init_db(app)
+    sync_sheet_into_sqlite(app)
 
     @app.context_processor
     def inject_globals():
@@ -291,6 +292,53 @@ def init_db(app: Flask) -> None:
             """
         )
         ensure_booking_columns(conn)
+        conn.commit()
+
+
+def sync_sheet_into_sqlite(app: Flask) -> None:
+    """Populate SQLite from Google Sheets so bookings survive redeploys."""
+    if not GSPREAD_AVAILABLE:
+        return
+
+    sheet_id = app.config.get("GOOGLE_SHEET_ID")
+    if not sheet_id:
+        return
+
+    try:
+        spreadsheet = get_spreadsheet(app, sheet_id)
+        worksheet_title = app.config.get("GOOGLE_SHEET_WORKSHEET", "Bookings")
+        worksheet = spreadsheet.worksheet(worksheet_title)
+        rows = worksheet.get_all_records()
+    except Exception as exc:  # pragma: no cover - requires Sheets API
+        app.logger.debug("Skipping sheet sync: %s", exc)
+        return
+
+    if not rows:
+        return
+
+    with sqlite3.connect(app.config["DATABASE"]) as conn:
+        for row in rows:
+            appointment_iso = (row.get("Appointment ISO")
+                               or row.get("appointment_iso")
+                               or row.get("Appointment ISO (ISO)")
+                               or row.get("appointment_at"))
+            name = row.get("Name") or row.get("name")
+            email = row.get("Email") or row.get("email")
+            phone = row.get("Phone") or row.get("phone")
+            service = row.get("Service") or row.get("service_type")
+            created_at = row.get("Created At (UTC)") or row.get("created_at") or datetime.utcnow().isoformat()
+            if not all([appointment_iso, name, email, phone, service]):
+                continue
+            try:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO bookings
+                        (name, email, phone, service_type, appointment_at, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
+                    (name.strip(), email.strip(), phone.strip(), service.strip(), appointment_iso.strip(), created_at.strip()),
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                app.logger.debug("Failed to hydrate booking for %s: %s", name, exc)
         conn.commit()
 
 

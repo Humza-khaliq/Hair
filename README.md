@@ -74,7 +74,7 @@ Choose whichever feels the most “no fuss” for you—each is free, and none r
    - `GOOGLE_SERVICE_ACCOUNT_FILE` **or** `GOOGLE_SERVICE_ACCOUNT_JSON`
    - (optional) `GOOGLE_SHEET_WORKSHEET=Bookings`
 
-Every booking submission now appends a row to the sheet with timestamps, service details, and scheduled time. If the sheet is not configured the app quietly falls back to storing data in SQLite only.
+Every booking submission now appends a row to the sheet with timestamps, service details, and scheduled time. On startup the app hydrates SQLite from that sheet so confirmed slots survive deploys. If the sheet is not configured the app quietly falls back to storing data in SQLite only.
 
 ### Environment variables
 
