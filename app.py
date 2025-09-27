@@ -25,17 +25,64 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 BASE_DIR = Path(__file__).resolve().parent
-SERVICE_TYPES = [
-    "Signature Fade",
-    "Skin Fade",
-    "Scissor Cut",
-    "Lineup",
-    "First Cut Lineup (Free)",
-    "Beard Trim",
-    "Fade + Beard Combo",
-    "Fade + Scissor + Lineup + Beard Trim",
-    "Custom Consultation",
+SERVICES = [
+    {
+        "name": "Signature Fade",
+        "duration": "30 min",
+        "price": "$15",
+        "description": "Fresh fade tailored to your head shape with razor-clean finish.",
+    },
+    {
+        "name": "Skin Fade",
+        "duration": "30 min",
+        "price": "$15",
+        "description": "Ultra-low blend that melts seamlessly into the skin.",
+    },
+    {
+        "name": "Scissor Cut",
+        "duration": "30 min",
+        "price": "$15",
+        "description": "Precision scissor work for length control and natural texture.",
+    },
+    {
+        "name": "Lineup",
+        "duration": "15 min",
+        "price": "$10",
+        "description": "Sharper corners and edges to keep your look crisp between cuts.",
+    },
+    {
+        "name": "First Cut Lineup (Free)",
+        "duration": "10 min",
+        "price": "$0",
+        "description": "First-time clients get a complimentary lineup to set the vibe.",
+    },
+    {
+        "name": "Beard Trim",
+        "duration": "20 min",
+        "price": "$7",
+        "description": "Shaped, detailed, and conditioned to keep your beard dialed in.",
+    },
+    {
+        "name": "Fade + Beard Combo",
+        "duration": "45 min",
+        "price": "$20",
+        "description": "Complete fade and beard clean-up with smooth transitions.",
+    },
+    {
+        "name": "Fade + Scissor + Lineup + Beard Trim",
+        "duration": "60 min",
+        "price": "$25",
+        "description": "Full session: fade, scissor detailing, sharp lineup, and beard finish.",
+    },
+    {
+        "name": "Custom Consultation",
+        "duration": "15 min",
+        "price": "$10",
+        "description": "Talk through a future cut, color, or style shift with pro guidance.",
+    },
 ]
+
+SERVICE_TYPES = [service["name"] for service in SERVICES]
 
 
 def create_app() -> Flask:
@@ -66,67 +113,11 @@ def create_app() -> Flask:
 
     @app.route("/")
     def home():
-        return render_template("index.html", service_types=SERVICE_TYPES)
+        return render_template("index.html", services_preview=SERVICES[:3])
 
     @app.route("/services")
     def services():
-        services_payload = [
-            {
-                "name": "Signature Fade",
-                "duration": "30 min",
-                "price": "$15",
-                "description": "Fresh fade tailored to your head shape with razor-clean finish.",
-            },
-            {
-                "name": "Skin Fade",
-                "duration": "30 min",
-                "price": "$15",
-                "description": "Ultra-low blend that melts seamlessly into the skin.",
-            },
-            {
-                "name": "Scissor Cut",
-                "duration": "30 min",
-                "price": "$15",
-                "description": "Precision scissor work for length control and natural texture.",
-            },
-            {
-                "name": "Lineup",
-                "duration": "15 min",
-                "price": "$10",
-                "description": "Sharper corners and edges to keep your look crisp between cuts.",
-            },
-            {
-                "name": "First Cut Lineup (Free)",
-                "duration": "10 min",
-                "price": "$0",
-                "description": "First-time clients get a complimentary lineup to set the vibe.",
-            },
-            {
-                "name": "Beard Trim",
-                "duration": "20 min",
-                "price": "$7",
-                "description": "Shaped, detailed, and conditioned to keep your beard dialed in.",
-            },
-            {
-                "name": "Fade + Beard Combo",
-                "duration": "45 min",
-                "price": "$20",
-                "description": "Complete fade and beard clean-up with smooth transitions.",
-            },
-            {
-                "name": "Fade + Scissor + Lineup + Beard Trim",
-                "duration": "60 min",
-                "price": "$25",
-                "description": "Full session: fade, scissor detailing, sharp lineup, and beard finish.",
-            },
-            {
-                "name": "Custom Consultation",
-                "duration": "15 min",
-                "price": "$10",
-                "description": "Talk through a future cut, color, or style shift with pro guidance.",
-            },
-        ]
-        return render_template("services.html", services=services_payload)
+        return render_template("services.html", services=SERVICES)
 
     @app.route("/book", methods=["GET", "POST"])
     def book():
@@ -359,11 +350,12 @@ def save_booking(
     return booking_id
 
 
-SLOT_START_HOUR = 13
-SLOT_END_HOUR = 17
 SLOT_INTERVAL = timedelta(minutes=30)
 SLOT_WEEKS_AHEAD = 4
-WEEKEND_DAYS = {5, 6}
+SLOT_WINDOWS = {
+    5: (13, 17),  # Saturday 1 PM – 5 PM
+    6: (14, 17),  # Sunday 2 PM – 5 PM
+}
 
 
 GOOGLE_SHEETS_SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -468,9 +460,10 @@ def upcoming_weekend_slots(start: date | None = None, weeks: int = 4) -> List[da
     slots: List[datetime] = []
     current = start_date
     while current <= end_date:
-        if current.weekday() in WEEKEND_DAYS:
-            slot_time = datetime.combine(current, time(hour=SLOT_START_HOUR))
-            while slot_time.time() < time(hour=SLOT_END_HOUR):
+        if current.weekday() in SLOT_WINDOWS:
+            start_hour, end_hour = SLOT_WINDOWS[current.weekday()]
+            slot_time = datetime.combine(current, time(hour=start_hour))
+            while slot_time.time() < time(hour=end_hour):
                 slots.append(slot_time)
                 slot_time += SLOT_INTERVAL
         current += timedelta(days=1)

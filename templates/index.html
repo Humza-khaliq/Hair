@@ -14,7 +14,7 @@
         <h2>Studio Hours</h2>
         <ul>
             <li>Saturday: 1:00 PM – 5:00 PM</li>
-            <li>Sunday: 1:00 PM – 5:00 PM</li>
+            <li>Sunday: 2:00 PM – 5:00 PM</li>
             <li>Weekdays: Closed (DM for special requests)</li>
         </ul>
         <p class="hero-address">Presidential Drive, Amherst, MA, 01003</p>
@@ -51,10 +51,10 @@
         <p>Hand-picked cuts and grooming designed to elevate your look.</p>
     </header>
     <div class="service-grid">
-        {% for service in service_types[:3] %}
+        {% for service in services_preview %}
             <div class="service-card">
-                <h3>{{ service }}</h3>
-                <p>Dialed-in fades and grooming with signature detail.</p>
+                <h3>{{ service.name }}</h3>
+                <p>{{ service.description }}</p>
             </div>
         {% endfor %}
     </div>
