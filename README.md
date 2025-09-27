@@ -42,7 +42,11 @@ A modern, responsive booking website for the Fade By Humz barber studio built wi
    Visit `http://127.0.0.1:5000` to explore the site.
 
 3. **Database**
-   - SQLite is used to persist bookings locally. The database file (`instance/bookings.db`) is created automatically with the `bookings` table when the app starts. On Render’s free tier the disk is ephemeral, so export data periodically or wire up a free remote store (see below).
+   - SQLite is used to persist bookings locally. The database file (`instance/bookings.db`) is created automatically with the `bookings` table when the app starts.
+
+4. **Booking cadence**
+   - Slots are available every Saturday and Sunday from 1:00 PM to 5:00 PM in 30-minute increments.
+   - Once a slot is booked it is removed from the dropdown until the following week. On Render’s free tier the disk is ephemeral, so export data periodically or wire up a free remote store (see below).
 
 ## Free & Simple Booking Storage Options
 
@@ -81,6 +85,11 @@ Every booking submission now appends a row to the sheet with timestamps, service
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Optional raw/base64 service account JSON | _unset_ |
 | `GOOGLE_SHEET_ID` | Target Google Sheet ID (required for cloud sync) | _unset_ |
 | `GOOGLE_SHEET_WORKSHEET` | Worksheet/tab name inside the sheet | `Bookings` |
+| `EMAIL_SMTP_SERVER` | SMTP server for confirmation emails | _unset_ |
+| `EMAIL_SMTP_PORT` | SMTP port (e.g. 587) | `587` |
+| `EMAIL_SENDER` | From email address | _unset_ |
+| `EMAIL_PASSWORD` | SMTP password or app password | _unset_ |
+| `EMAIL_USE_TLS` | Set to `0` to disable STARTTLS | `1` |
 
 ## Styling & Customization
 
@@ -119,6 +128,7 @@ Render’s free web service tier can host the Docker image 24/7 (sleeping when i
    - `SECRET_KEY=<your-random-secret>`
    - (optional) `DATABASE_URL=<supabase-or-other-connection>` if you switch away from SQLite.
    - (optional) `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (or `GOOGLE_SERVICE_ACCOUNT_FILE`), and `GOOGLE_SHEET_WORKSHEET` if you want automatic Google Sheets sync.
+   - (optional) `EMAIL_SMTP_SERVER`, `EMAIL_SMTP_PORT`, `EMAIL_SENDER`, `EMAIL_PASSWORD` (and `EMAIL_USE_TLS`) to send confirmation emails.
 6. Deploy. The health check at `/health` will help you confirm the instance is awake.
 7. Optional: wire in Supabase/Sheets by updating `save_booking` once you have API keys.
 

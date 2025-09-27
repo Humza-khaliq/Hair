@@ -13,6 +13,14 @@
             <input type="text" id="name" name="name" placeholder="Your name" required>
         </div>
         <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" placeholder="(123) 456-7890" required>
+        </div>
+        <div class="form-group">
             <label for="service_type">Service Type</label>
             <select id="service_type" name="service_type" required>
                 <option value="" disabled selected>Select your service</option>
@@ -21,28 +29,30 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="appointment_date">Date</label>
-                <input type="date" id="appointment_date" name="appointment_date" required>
-            </div>
-            <div class="form-group">
-                <label for="appointment_time">Time</label>
-                <input type="time" id="appointment_time" name="appointment_time" required>
-            </div>
+        <div class="form-group">
+            <label for="slot">Weekend Time Slot</label>
+            <select id="slot" name="slot" {% if not has_open_slots %}disabled{% endif %} required>
+                <option value="" disabled selected>Select a time</option>
+                {% for slot in slot_choices %}
+                    <option value="{{ slot.value }}" {% if slot.booked %}disabled{% endif %}>{{ slot.label }}{% if slot.booked %} — Booked{% endif %}</option>
+                {% endfor %}
+            </select>
         </div>
-        <button class="btn-primary" type="submit">Book Your Fade Now</button>
+        {% if slot_choices|selectattr('booked', 'equalto', False)|list|length == 0 %}
+            <p class="form-note">Every slot this weekend is booked. Check back soon for fresh availability.</p>
+        {% endif %}
+        <button class="btn-primary" type="submit" {% if not has_open_slots %}disabled{% endif %}>Book Your Fade Now</button>
     </form>
     <aside class="booking-info">
-        <h3>Heads up!</h3>
-        <p>Your booking is saved instantly in our system. We'll reach out with a text or email to lock in every detail.</p>
+        <h3>Weekend Slots Only</h3>
+        <p>Book any Saturday or Sunday between 1:00 PM and 5:00 PM. Once a slot is taken it disappears until the next week.</p>
         <div class="info-card">
             <h4>Need to reschedule?</h4>
             <p>Reply to your confirmation message or send a quick DM. We'll get you set up.</p>
         </div>
         <p class="address">
             Studio Location:<br>
-            Presidential Drive, Apartment #7<br>
+            Presidential Drive<br>
             Amherst, MA, 01003
         </p>
     </aside>

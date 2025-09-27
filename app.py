@@ -4,9 +4,12 @@ import base64
 import json
 import logging
 import os
+import smtplib
 import sqlite3
-from datetime import datetime
+import ssl
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
+from typing import List
 
 from flask import Flask, flash, redirect, render_template, request, url_for
 
@@ -25,9 +28,12 @@ BASE_DIR = Path(__file__).resolve().parent
 SERVICE_TYPES = [
     "Signature Fade",
     "Skin Fade",
+    "Scissor Cut",
     "Lineup",
+    "First Cut Lineup (Free)",
     "Beard Trim",
     "Fade + Beard Combo",
+    "Fade + Scissor + Lineup + Beard Trim",
     "Custom Consultation",
 ]
 
@@ -67,89 +73,183 @@ def create_app() -> Flask:
         services_payload = [
             {
                 "name": "Signature Fade",
-                "duration": "45 min",
-                "price": "$35",
-                "description": "Crisp gradients with precise detailing for that fresh fade look.",
+                "duration": "30 min",
+                "price": "$15",
+                "description": "Fresh fade tailored to your head shape with razor-clean finish.",
             },
             {
                 "name": "Skin Fade",
-                "duration": "50 min",
-                "price": "$40",
-                "description": "Ultra-clean fade that melts to skin with sharp, sculpted lines.",
+                "duration": "30 min",
+                "price": "$15",
+                "description": "Ultra-low blend that melts seamlessly into the skin.",
+            },
+            {
+                "name": "Scissor Cut",
+                "duration": "30 min",
+                "price": "$15",
+                "description": "Precision scissor work for length control and natural texture.",
             },
             {
                 "name": "Lineup",
-                "duration": "25 min",
-                "price": "$20",
-                "description": "Clean edges and crisp outlines to keep your style dialed in.",
+                "duration": "15 min",
+                "price": "$10",
+                "description": "Sharper corners and edges to keep your look crisp between cuts.",
+            },
+            {
+                "name": "First Cut Lineup (Free)",
+                "duration": "10 min",
+                "price": "$0",
+                "description": "First-time clients get a complimentary lineup to set the vibe.",
             },
             {
                 "name": "Beard Trim",
-                "duration": "30 min",
-                "price": "$25",
-                "description": "Refined shaping and conditioning tailored to your beard goals.",
+                "duration": "20 min",
+                "price": "$7",
+                "description": "Shaped, detailed, and conditioned to keep your beard dialed in.",
             },
             {
                 "name": "Fade + Beard Combo",
-                "duration": "75 min",
-                "price": "$55",
-                "description": "Full head-to-beard refresh with seamless transitions and details.",
+                "duration": "45 min",
+                "price": "$20",
+                "description": "Complete fade and beard clean-up with smooth transitions.",
+            },
+            {
+                "name": "Fade + Scissor + Lineup + Beard Trim",
+                "duration": "60 min",
+                "price": "$25",
+                "description": "Full session: fade, scissor detailing, sharp lineup, and beard finish.",
             },
             {
                 "name": "Custom Consultation",
                 "duration": "15 min",
                 "price": "$10",
-                "description": "Quick style check-in to map out your next signature look.",
+                "description": "Talk through a future cut, color, or style shift with pro guidance.",
             },
         ]
         return render_template("services.html", services=services_payload)
 
     @app.route("/book", methods=["GET", "POST"])
     def book():
+        slot_choices = build_slot_choices(app)
+        has_open_slots = any(not c["booked"] for c in slot_choices)
+
         if request.method == "POST":
             name = request.form.get("name", "").strip()
+            email = request.form.get("email", "").strip()
+            phone = request.form.get("phone", "").strip()
             service_type = request.form.get("service_type", "").strip()
-            appointment_date = request.form.get("appointment_date")
-            appointment_time = request.form.get("appointment_time")
+            slot_value = request.form.get("slot")
 
-            if not name or not service_type or not appointment_date or not appointment_time:
+            if not all([name, email, phone, service_type, slot_value]):
                 flash("All booking fields are required.", "error")
-                return redirect(url_for("book"))
-
-            try:
-                appointment_dt = datetime.strptime(
-                    f"{appointment_date} {appointment_time}", "%Y-%m-%d %H:%M"
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
                 )
-            except ValueError:
-                flash("Invalid date or time format. Please try again.", "error")
-                return redirect(url_for("book"))
 
             if service_type not in SERVICE_TYPES:
                 flash("Please choose a valid service.", "error")
-                return redirect(url_for("book"))
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
 
-            booking_id = save_booking(
+            try:
+                slot_datetime = datetime.fromisoformat(slot_value)
+            except ValueError:
+                flash("Selected time slot is invalid. Please choose another.", "error")
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+
+            slot_lookup = {c["value"]: c for c in slot_choices}
+            slot_info = slot_lookup.get(slot_value)
+            if slot_info is None:
+                flash("That time slot is no longer available.", "error")
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+            if slot_info["booked"]:
+                flash("That time slot has already been booked. Please choose another.", "error")
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+
+            if slot_datetime <= datetime.now():
+                flash("Cannot book a slot in the past.", "error")
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+
+            if has_same_day_booking(app, name, email, slot_datetime.date()):
+                flash("You already have a booking that day. Reach out to reschedule instead.", "error")
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+
+            try:
+                booking_id = save_booking(
+                    app,
+                    name=name,
+                    email=email,
+                    phone=phone,
+                    service_type=service_type,
+                    appointment_dt=slot_datetime,
+                )
+            except sqlite3.IntegrityError:
+                flash("That time slot has just been booked. Please pick another.", "error")
+                slot_choices = build_slot_choices(app)
+                has_open_slots = any(not c["booked"] for c in slot_choices)
+                return render_template(
+                    "book.html",
+                    service_types=SERVICE_TYPES,
+                    slot_choices=slot_choices,
+                    has_open_slots=has_open_slots,
+                )
+
+            send_confirmation_email(
                 app,
-                name=name,
-                service_type=service_type,
-                appointment_dt=appointment_dt,
+                {
+                    "name": name,
+                    "email": email,
+                    "phone": phone,
+                    "service_type": service_type,
+                    "slot_label": slot_info["label"],
+                },
             )
 
-            flash("Appointment booked! We'll reach out soon to confirm.", "success")
+            flash("Appointment booked! We just sent a confirmation email.", "success")
             return redirect(url_for("book"))
 
         return render_template(
             "book.html",
             service_types=SERVICE_TYPES,
+            slot_choices=slot_choices,
+            has_open_slots=has_open_slots,
         )
 
     @app.route("/location")
     def location():
         return render_template("location.html")
-
-    @app.route("/contact")
-    def contact():
-        return render_template("contact.html")
 
     @app.route("/health")
     def health():
@@ -191,17 +291,42 @@ def init_db(app: Flask) -> None:
             CREATE TABLE IF NOT EXISTS bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
                 service_type TEXT NOT NULL,
-                appointment_at TEXT NOT NULL,
-                google_event_id TEXT,
+                appointment_at TEXT NOT NULL UNIQUE,
                 created_at TEXT NOT NULL
             )
             """
         )
+        ensure_booking_columns(conn)
         conn.commit()
 
 
-def save_booking(app: Flask, name: str, service_type: str, appointment_dt: datetime) -> int:
+def ensure_booking_columns(conn: sqlite3.Connection) -> None:
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(bookings)")}
+    if "email" not in columns:
+        conn.execute("ALTER TABLE bookings ADD COLUMN email TEXT")
+    if "phone" not in columns:
+        conn.execute("ALTER TABLE bookings ADD COLUMN phone TEXT")
+    if "created_at" not in columns:
+        conn.execute("ALTER TABLE bookings ADD COLUMN created_at TEXT")
+    indices = {row[1] for row in conn.execute("PRAGMA index_list(bookings)")}
+    if "idx_booking_slot" not in indices:
+        try:
+            conn.execute("CREATE UNIQUE INDEX idx_booking_slot ON bookings(appointment_at)")
+        except sqlite3.OperationalError:
+            pass
+
+
+def save_booking(
+    app: Flask,
+    name: str,
+    email: str,
+    phone: str,
+    service_type: str,
+    appointment_dt: datetime,
+) -> int:
     """Persist a booking and return the new booking ID."""
     stored_at = datetime.utcnow().isoformat()
     stored_dt = appointment_dt.isoformat()
@@ -210,10 +335,10 @@ def save_booking(app: Flask, name: str, service_type: str, appointment_dt: datet
     with sqlite3.connect(app.config["DATABASE"]) as conn:
         cursor = conn.execute(
             """
-            INSERT INTO bookings (name, service_type, appointment_at, created_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO bookings (name, email, phone, service_type, appointment_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (name, service_type, stored_dt, stored_at),
+            (name, email, phone, service_type, stored_dt, stored_at),
         )
         conn.commit()
         booking_id = cursor.lastrowid
@@ -224,12 +349,21 @@ def save_booking(app: Flask, name: str, service_type: str, appointment_dt: datet
         {
             "created_at": stored_at,
             "name": name,
+            "email": email,
+            "phone": phone,
             "service_type": service_type,
             "appointment_local": appointment_local,
             "appointment_iso": stored_dt,
         },
     )
     return booking_id
+
+
+SLOT_START_HOUR = 13
+SLOT_END_HOUR = 17
+SLOT_INTERVAL = timedelta(minutes=30)
+SLOT_WEEKS_AHEAD = 4
+WEEKEND_DAYS = {5, 6}
 
 
 GOOGLE_SHEETS_SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -252,9 +386,17 @@ def append_booking_to_sheet(app: Flask, booking: dict[str, str]) -> None:
         try:
             worksheet = spreadsheet.worksheet(worksheet_title)
         except WorksheetNotFound:  # pragma: no cover - requires Sheets API
-            worksheet = spreadsheet.add_worksheet(title=worksheet_title, rows="200", cols="6")
+            worksheet = spreadsheet.add_worksheet(title=worksheet_title, rows="200", cols="7")
             worksheet.append_row(
-                ["Created At (UTC)", "Name", "Service", "Appointment (local)", "Appointment ISO"],
+                [
+                    "Created At (UTC)",
+                    "Name",
+                    "Email",
+                    "Phone",
+                    "Service",
+                    "Appointment (local)",
+                    "Appointment ISO",
+                ],
                 value_input_option="USER_ENTERED",
             )
 
@@ -262,6 +404,8 @@ def append_booking_to_sheet(app: Flask, booking: dict[str, str]) -> None:
             [
                 booking["created_at"],
                 booking["name"],
+                booking["email"],
+                booking["phone"],
                 booking["service_type"],
                 booking["appointment_local"],
                 booking["appointment_iso"],
@@ -317,6 +461,79 @@ def load_service_account_credentials(app: Flask):
     raise FileNotFoundError(
         "Google service account credentials not found. Configure GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE."
     )
+
+def upcoming_weekend_slots(start: date | None = None, weeks: int = 4) -> List[datetime]:
+    start_date = start or date.today()
+    end_date = start_date + timedelta(weeks=weeks)
+    slots: List[datetime] = []
+    current = start_date
+    while current <= end_date:
+        if current.weekday() in WEEKEND_DAYS:
+            slot_time = datetime.combine(current, time(hour=SLOT_START_HOUR))
+            while slot_time.time() < time(hour=SLOT_END_HOUR):
+                slots.append(slot_time)
+                slot_time += SLOT_INTERVAL
+        current += timedelta(days=1)
+    return slots
+
+
+def fetch_booked_slots(app: Flask) -> set[str]:
+    with sqlite3.connect(app.config["DATABASE"]) as conn:
+        rows = conn.execute("SELECT appointment_at FROM bookings").fetchall()
+    return {row[0] for row in rows}
+
+
+def has_same_day_booking(app: Flask, name: str, email: str, target_date: date) -> bool:
+    target_prefix = f"{target_date.isoformat()}%"
+    with sqlite3.connect(app.config["DATABASE"]) as conn:
+        row = conn.execute("SELECT 1 FROM bookings WHERE name = ? AND email = ? AND appointment_at LIKE ?", (name, email, target_prefix)).fetchone()
+    return row is not None
+
+
+def build_slot_choices(app: Flask) -> List[dict]:
+    slots = upcoming_weekend_slots(weeks=SLOT_WEEKS_AHEAD)
+    booked = fetch_booked_slots(app)
+    now = datetime.now()
+    choices: List[dict] = []
+    for slot_dt in slots:
+        if slot_dt <= now:
+            continue
+        iso = slot_dt.isoformat()
+        choices.append({"value": iso, "label": slot_dt.strftime("%a %b %d · %I:%M %p"), "booked": iso in booked})
+    return choices
+
+
+def send_confirmation_email(app: Flask, booking: dict[str, str]) -> None:
+    smtp_host = os.environ.get("EMAIL_SMTP_SERVER")
+    smtp_port = int(os.environ.get("EMAIL_SMTP_PORT", "587"))
+    sender = os.environ.get("EMAIL_SENDER")
+    password = os.environ.get("EMAIL_PASSWORD")
+    recipient = booking.get("email")
+    if not all([smtp_host, sender, password, recipient]):
+        app.logger.debug("Email settings incomplete; skipping confirmation email.")
+        return
+
+    subject = "Fade By Humz Booking Confirmation"
+    body = (
+        f"Hey {booking['name']},\n\n"
+        f"Your booking is locked in for {booking['slot_label']} ({booking['service_type']}).\n"
+        "If you need to switch times, reply to this email or text the shop.\n\n"
+        "Stay fresh,\nFade By Humz"
+    )
+    message = f"From: {sender}\nTo: {recipient}\nSubject: {subject}\n\n{body}"
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            if os.environ.get("EMAIL_USE_TLS", "1") not in {"0", "false", "False"}:
+                server.starttls(context=context)
+            server.login(sender, password)
+            server.sendmail(sender, [recipient], message)
+        app.logger.info("Sent confirmation email to %s", recipient)
+    except Exception as exc:  # pragma: no cover - external service
+        app.logger.exception("Failed to send confirmation email: %s", exc)
+
+
 
 app = create_app()
 

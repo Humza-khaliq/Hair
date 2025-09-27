@@ -396,6 +396,12 @@ main {
     margin-bottom: 1.25rem;
 }
 
+.form-note {
+    margin: -0.5rem 0 1.5rem;
+    font-size: 0.9rem;
+    color: rgba(245, 247, 255, 0.7);
+}
+
 .form-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
