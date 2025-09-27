@@ -155,6 +155,20 @@ def create_app() -> Flask:
     def health():
         return "ok", 200
 
+    @app.route("/debug-sa")
+    def debug_service_account():  # pragma: no cover - diagnostics
+        path = app.config.get("GOOGLE_SERVICE_ACCOUNT_FILE")
+        exists = bool(path and Path(path).exists())
+        info = {"path": path, "exists": exists}
+        if exists:
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    payload = json.load(fh)
+                info["client_email"] = payload.get("client_email")
+            except Exception as exc:  # pragma: no cover
+                info["error"] = str(exc)
+        return info, (200 if exists else 500)
+
     return app
 
 
