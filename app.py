@@ -513,12 +513,12 @@ def send_confirmation_email(app: Flask, booking: dict[str, str]) -> None:
         app.logger.debug("Email settings incomplete; skipping confirmation email.")
         return
 
-    subject = "Fade By Humz Booking Confirmation"
+    subject = "The Cutfish Booking Confirmation"
     body = (
         f"Hey {booking['name']},\n\n"
         f"Your booking is locked in for {booking['slot_label']} ({booking['service_type']}).\n"
         "If you need to switch times, reply to this email or text the shop.\n\n"
-        "Stay fresh,\nFade By Humz"
+        "Keep swimming in style,\nThe Cutfish"
     )
     message = f"From: {sender}\nTo: {recipient}\nSubject: {subject}\n\n{body}"
 

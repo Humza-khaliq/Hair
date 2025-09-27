@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fade By Humz | {% block title %}{% endblock title %}</title>
+    <title>The Cutfish | {% block title %}{% endblock title %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <body>
 <nav class="navbar">
     <div class="nav-brand">
-        <a href="{{ url_for('home') }}">Fade By Humz</a>
+        <a href="{{ url_for('home') }}">The Cutfish</a>
     </div>
     <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">
         <span></span>
@@ -24,7 +24,7 @@
         <a href="{{ url_for('services') }}">Services</a>
         <a href="{{ url_for('book') }}">Book Appointment</a>
         <a href="{{ url_for('location') }}">Location</a>
-        <a class="cta" href="{{ url_for('book') }}">Book Your Fade Now</a>
+        <a class="cta" href="{{ url_for('book') }}">Book Your Wave</a>
     </div>
 </nav>
 
@@ -44,7 +44,7 @@
 
 <footer class="footer">
     <div class="footer-content">
-        <p>&copy; {{ current_year | default(2024) }} Fade By Humz. All rights reserved.</p>
+        <p>&copy; {{ current_year | default(2024) }} The Cutfish. All rights reserved.</p>
         <p>Presidential Drive, Amherst, MA, 01003</p>
     </div>
 </footer>

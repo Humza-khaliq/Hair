@@ -1,6 +1,6 @@
-# Fade By Humz
+# The Cutfish
 
-A modern, responsive booking website for the Fade By Humz barber studio built with Flask, Jinja2 templates, and SQLite. Appointments are stored locally and can sync automatically with Google Calendar via OAuth 2.0.
+A modern, responsive booking website for The Cutfish studio built with Flask, Jinja2 templates, and SQLite. Appointments are saved locally and, when configured, mirrored to a Google Sheet for easy review.
 
 ## Project Structure
 

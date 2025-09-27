@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-hero">
     <h1>Book Your Appointment</h1>
-    <p>Lock in your next fade with just a few taps. Choose your service and time that fits your flow.</p>
+    <p>Drop anchor on a weekend slot and we'll handle the rest. Pick your service, choose a time, and we'll confirm the vibe.</p>
 </section>
 
 <section class="booking-section">
@@ -41,7 +41,7 @@
         {% if slot_choices|selectattr('booked', 'equalto', False)|list|length == 0 %}
             <p class="form-note">Every slot this weekend is booked. Check back soon for fresh availability.</p>
         {% endif %}
-        <button class="btn-primary" type="submit" {% if not has_open_slots %}disabled{% endif %}>Book Your Fade Now</button>
+        <button class="btn-primary" type="submit" {% if not has_open_slots %}disabled{% endif %}>Book Your Wave</button>
     </form>
     <aside class="booking-info">
         <h3>Weekend Slots Only</h3>

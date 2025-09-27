@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-hero">
     <h1>Services</h1>
-    <p>Signature cuts, refined grooming, and premium experience crafted by Humz.</p>
+    <p>Saltwater-inspired cuts, laid-back grooming, and a premium chair-side experience crafted by The Cutfish.</p>
 </section>
 
 <section class="service-details">
@@ -17,20 +17,20 @@
                 <p class="service-description">{{ service.description }}</p>
                 <div class="service-meta">
                     <span>{{ service.duration }}</span>
-                    <span>Fade By Humz Studio</span>
+                    <span>The Cutfish Studio</span>
                 </div>
             </article>
         {% endfor %}
     </div>
     <aside class="service-sidebar">
-        <h3>Why Book With Humz?</h3>
+        <h3>Why Cruise with The Cutfish?</h3>
         <ul>
-            <li>Precision fades with artistry and consistency</li>
-            <li>Custom consultations to match your personal style</li>
-            <li>Relaxed environment with pro-grade products</li>
-            <li>Appointments synced to your calendar instantly</li>
+            <li>Coastal fades with consistent precision every time</li>
+            <li>Custom consultations so your cut matches your current tide</li>
+            <li>Chill studio energy with pro-grade products and curated playlists</li>
+            <li>Weekend slots only—easy to plan, impossible to forget</li>
         </ul>
-        <a href="{{ url_for('book') }}" class="btn-primary">Book Your Fade Now</a>
+        <a href="{{ url_for('book') }}" class="btn-primary">Book Your Wave</a>
     </aside>
 </section>
 {% endblock content %}
