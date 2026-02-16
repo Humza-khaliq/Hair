@@ -70,7 +70,7 @@ function initAmbientNetwork() {
     }
 
     function updateNodes() {
-        const pointerRadius = window.innerWidth < 540 ? 90 : 130;
+        const pointerRadius = window.innerWidth < 540 ? 140 : 220;
         nodes.forEach((node) => {
             node.x += node.vx;
             node.y += node.vy;
@@ -91,8 +91,9 @@ function initAmbientNetwork() {
                 const dist = Math.hypot(dx, dy) || 0.001;
                 if (dist < pointerRadius) {
                     const strength = (pointerRadius - dist) / pointerRadius;
-                    node.vx += (dx / dist) * strength * 0.12;
-                    node.vy += (dy / dist) * strength * 0.12;
+                    const pull = 0.2;
+                    node.vx += (dx / dist) * strength * pull;
+                    node.vy += (dy / dist) * strength * pull;
                 }
             }
         });
@@ -115,9 +116,9 @@ function initAmbientNetwork() {
                 const dy = nodes[i].y - nodes[j].y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < linkDistance) {
-                    const alpha = 0.12 * (1 - dist / linkDistance);
+                    const alpha = 0.22 * (1 - dist / linkDistance);
                     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = 1.2;
                     ctx.beginPath();
                     ctx.moveTo(nodes[i].x, nodes[i].y);
                     ctx.lineTo(nodes[j].x, nodes[j].y);
