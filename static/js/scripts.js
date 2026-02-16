@@ -27,6 +27,7 @@ function initAmbientNetwork() {
         return;
     }
 
+    const pointer = { x: 0, y: 0, active: false };
     let width = window.innerWidth;
     let height = window.innerHeight;
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -69,6 +70,7 @@ function initAmbientNetwork() {
     }
 
     function updateNodes() {
+        const pointerRadius = window.innerWidth < 540 ? 240 : 420;
         nodes.forEach((node) => {
             node.x += node.vx;
             node.y += node.vy;
@@ -83,6 +85,17 @@ function initAmbientNetwork() {
             node.vx = clampVelocity(node.vx);
             node.vy = clampVelocity(node.vy);
 
+            if (pointer.active) {
+                const dx = node.x - pointer.x;
+                const dy = node.y - pointer.y;
+                const dist = Math.hypot(dx, dy) || 0.001;
+                if (dist < pointerRadius) {
+                    const strength = (pointerRadius - dist) / pointerRadius;
+                    const pull = 1;
+                    node.vx += (dx / dist) * strength * pull;
+                    node.vy += (dy / dist) * strength * pull;
+                }
+            }
         });
     }
 
@@ -140,6 +153,20 @@ function initAmbientNetwork() {
     window.addEventListener('resize', () => {
         setCanvasSize();
         seedNodes();
+    });
+
+    window.addEventListener('pointermove', (event) => {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        pointer.active = true;
+    });
+
+    window.addEventListener('pointerleave', () => {
+        pointer.active = false;
+    });
+
+    window.addEventListener('touchend', () => {
+        pointer.active = false;
     });
 
     document.addEventListener('visibilitychange', () => {
