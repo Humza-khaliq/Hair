@@ -116,9 +116,9 @@ function initAmbientNetwork() {
                 const dy = nodes[i].y - nodes[j].y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < linkDistance) {
-                    const alpha = 0.22 * (1 - dist / linkDistance);
+                    const alpha = 0.36 * (1 - dist / linkDistance);
                     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
-                    ctx.lineWidth = 1.2;
+                    ctx.lineWidth = 1.5;
                     ctx.beginPath();
                     ctx.moveTo(nodes[i].x, nodes[i].y);
                     ctx.lineTo(nodes[j].x, nodes[j].y);
