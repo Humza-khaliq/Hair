@@ -330,12 +330,32 @@ main {
     margin-top: 2rem;
 }
 
+.service-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    align-content: start;
+}
+
 .service-item {
+    display: block;
     background: rgba(15, 20, 38, 0.8);
     padding: 1.75rem;
     border-radius: 18px;
     border: 1px solid var(--border-color);
-    margin-bottom: 1.5rem;
+    margin: 0;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+}
+
+.service-item:hover,
+.service-item:focus-visible {
+    border-color: rgba(255, 209, 102, 0.6);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    transform: translateY(-4px);
 }
 
 .service-header {
@@ -366,6 +386,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    align-self: start; /* keep sidebar height to its content so no blank tail */
 }
 
 .service-sidebar ul {
