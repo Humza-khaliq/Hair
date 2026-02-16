@@ -9,7 +9,11 @@
 <section class="service-details">
     <div class="service-list">
         {% for service in services %}
-            <article class="service-item">
+            <a
+                class="service-item"
+                href="{{ url_for('book') }}"
+                aria-label="Book {{ service.name }}"
+            >
                 <div class="service-header">
                     <h2>{{ service.name }}</h2>
                     <span class="service-price">{{ service.price }}</span>
@@ -19,7 +23,7 @@
                     <span>{{ service.duration }}</span>
                     <span>The Cutfish Studio</span>
                 </div>
-            </article>
+            </a>
         {% endfor %}
     </div>
     <aside class="service-sidebar">
