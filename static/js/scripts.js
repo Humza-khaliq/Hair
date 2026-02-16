@@ -45,9 +45,9 @@ function initAmbientNetwork() {
     }
 
     function targetCount() {
-        if (width < 540) return 30;
-        if (width < 1024) return 50;
-        return 70;
+        if (width < 540) return 45;
+        if (width < 1024) return 80;
+        return 110;
     }
 
     function seedNodes() {
@@ -109,16 +109,16 @@ function initAmbientNetwork() {
     }
 
     function drawConnections() {
-        const linkDistance = window.innerWidth < 768 ? 110 : 150;
+        const linkDistance = window.innerWidth < 768 ? 140 : 200;
         for (let i = 0; i < nodes.length; i += 1) {
             for (let j = i + 1; j < nodes.length; j += 1) {
                 const dx = nodes[i].x - nodes[j].x;
                 const dy = nodes[i].y - nodes[j].y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < linkDistance) {
-                    const alpha = 0.36 * (1 - dist / linkDistance);
+                    const alpha = 0.5 * (1 - dist / linkDistance);
                     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
-                    ctx.lineWidth = 1.5;
+                    ctx.lineWidth = 2;
                     ctx.beginPath();
                     ctx.moveTo(nodes[i].x, nodes[i].y);
                     ctx.lineTo(nodes[j].x, nodes[j].y);
