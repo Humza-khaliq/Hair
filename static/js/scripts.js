@@ -65,12 +65,12 @@ function initAmbientNetwork() {
     }
 
     function clampVelocity(value) {
-        const limit = 0.45;
+        const limit = 0.75;
         return Math.max(Math.min(value, limit), -limit);
     }
 
     function updateNodes() {
-        const pointerRadius = window.innerWidth < 540 ? 140 : 220;
+        const pointerRadius = window.innerWidth < 540 ? 240 : 420;
         nodes.forEach((node) => {
             node.x += node.vx;
             node.y += node.vy;
@@ -91,7 +91,7 @@ function initAmbientNetwork() {
                 const dist = Math.hypot(dx, dy) || 0.001;
                 if (dist < pointerRadius) {
                     const strength = (pointerRadius - dist) / pointerRadius;
-                    const pull = 0.2;
+                    const pull = 1;
                     node.vx += (dx / dist) * strength * pull;
                     node.vy += (dy / dist) * strength * pull;
                 }
@@ -100,11 +100,14 @@ function initAmbientNetwork() {
     }
 
     function drawNodes() {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillStyle = 'rgba(188, 205, 214, 0.9)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 0.6;
         nodes.forEach((node) => {
             ctx.beginPath();
             ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
             ctx.fill();
+            ctx.stroke();
         });
     }
 
