@@ -27,20 +27,49 @@ body {
     flex-direction: column;
 }
 
-.ambient-bg {
+.barber-bg {
     position: fixed;
     inset: 0;
     z-index: -1;
-    overflow: hidden;
     pointer-events: none;
+    overflow: hidden;
 }
 
-#ambient-network {
-    width: 100%;
-    height: 100%;
-    display: block;
-    opacity: 0.55;
-    filter: blur(0.15px);
+.barber-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.05), transparent 45%),
+        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.05), transparent 50%);
+}
+
+.barber-bg .tool {
+    position: absolute;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.85;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.35));
+    animation: barber-float 28s ease-in-out infinite;
+    transform: rotate(var(--start-rot, 0deg));
+}
+
+.tool-comb { width: 180px; height: 46px; top: 10%; left: 8%; --start-rot: -8deg; animation-duration: 32s; background-image: url('../img/tool-comb.svg'); }
+.tool-razor { width: 140px; height: 40px; top: 30%; left: 65%; --start-rot: 6deg; animation-duration: 26s; background-image: url('../img/tool-razor.svg'); }
+.tool-shears { width: 190px; height: 46px; top: 20%; left: 35%; --start-rot: -2deg; animation-duration: 30s; background-image: url('../img/tool-shears.svg'); }
+.tool-brush { width: 90px; height: 120px; top: 58%; left: 18%; --start-rot: 12deg; animation-duration: 34s; background-image: url('../img/tool-brush.svg'); }
+.tool-clipper { width: 110px; height: 200px; top: 55%; left: 52%; --start-rot: -14deg; animation-duration: 38s; background-image: url('../img/tool-clipper.svg'); }
+.tool-guard { width: 150px; height: 70px; top: 70%; left: 72%; --start-rot: 4deg; animation-duration: 29s; background-image: url('../img/tool-guard.svg'); }
+
+@keyframes barber-float {
+    0% { transform: translate3d(0, 0, 0) rotate(var(--start-rot, 0deg)); }
+    50% { transform: translate3d(18px, -14px, 0) rotate(calc(var(--start-rot, 0deg) + 4deg)); }
+    100% { transform: translate3d(0, 0, 0) rotate(var(--start-rot, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .barber-bg .tool {
+        animation: none;
+    }
 }
 
 a {
