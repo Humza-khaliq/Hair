@@ -10,13 +10,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="barber-bg" aria-hidden="true">
-        <div class="tool tool-comb" data-float-range="26" data-float-speed="0.12"></div>
-        <div class="tool tool-razor" data-float-range="22" data-float-speed="0.14"></div>
-        <div class="tool tool-shears" data-float-range="28" data-float-speed="0.1"></div>
-        <div class="tool tool-brush" data-float-range="24" data-float-speed="0.11"></div>
-        <div class="tool tool-clipper" data-float-range="30" data-float-speed="0.09"></div>
-        <div class="tool tool-guard" data-float-range="20" data-float-speed="0.13"></div>
+    <div class="ambient-bg" aria-hidden="true">
+        <canvas id="ambient-network"></canvas>
     </div>
 <nav class="navbar">
     <div class="nav-brand">
