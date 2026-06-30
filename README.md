@@ -46,7 +46,7 @@ A modern, responsive booking website for The Cutfish studio built with Flask, Ji
 
 4. **Booking cadence**
    - Slots are available every Saturday and Sunday from 1:00 PM to 5:00 PM in 30-minute increments.
-   - Once a slot is booked it is removed from the dropdown until the following week. On Render’s free tier the disk is ephemeral, so export data periodically or wire up a free remote store (see below).
+   - Once a slot is booked it is removed from the dropdown until the following week. Vercel's container runtime uses an ephemeral disk, so export data periodically or wire up a free remote store (see below).
 
 ## Free & Simple Booking Storage Options
 
@@ -107,29 +107,39 @@ There are no automated tests bundled. Before deploying, manually validate:
 ## Notes
 
 - Treat `instance/bookings.db` like an application secret—store it somewhere safe or connect to a managed database if you need long-term persistence.
-- Store secrets securely (environment variables, Render Secret Files, etc.) before deploying.
+- Store secrets securely (environment variables, Vercel encrypted env vars, etc.) before deploying.
+
 ## Docker
 
-- Build the production image locally: `docker build -t fade-by-humz .`
+- Build the production image locally: `docker build -f Dockerfile.vercel -t fade-by-humz .` (the plain `Dockerfile` still works for other Docker hosts)
 - Run it: `docker run --rm -p 8080:8080 -e PORT=8080 fade-by-humz`
-- The app listens on `0.0.0.0:8080` inside the container and serves via Gunicorn.
-- The Gunicorn command respects the `PORT` environment variable (Render sets this automatically).
+- The app listens on `0.0.0.0:$PORT` inside the container (defaults to `80`, matching Vercel's container runtime) and serves via Gunicorn.
 - Health check endpoint available at `/health` (returns `ok`) for uptime monitoring.
 
-## Deploying Free on Render
+## Deploying via Docker on Vercel
 
-Render’s free web service tier can host the Docker image 24/7 (sleeping when idle but waking on traffic). Steps:
+Vercel can build and run an arbitrary Docker image through its container runtime (Vercel Functions backed by the Vercel Container Registry), autoscaling it like any other Vercel deployment. Steps:
 
-1. Push this project to a Git repository (Render pulls from GitHub/GitLab/Bitbucket).
-2. Sign up at [Render](https://render.com) and create a **New +** → **Web Service**.
-3. Choose the repo, select the **Docker** environment, and Render will auto-detect `render.yaml`.
-4. Set the instance type to **Free** and pick a region near your clients.
-5. Add the following environment variables under **Environment**:
-   - `SECRET_KEY=<your-random-secret>`
-   - (optional) `DATABASE_URL=<supabase-or-other-connection>` if you switch away from SQLite.
-   - (optional) `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (or `GOOGLE_SERVICE_ACCOUNT_FILE`), and `GOOGLE_SHEET_WORKSHEET` if you want automatic Google Sheets sync.
-   - (optional) `EMAIL_SMTP_SERVER`, `EMAIL_SMTP_PORT`, `EMAIL_SENDER`, `EMAIL_PASSWORD` (and `EMAIL_USE_TLS`) to send confirmation emails.
-6. Deploy. The health check at `/health` will help you confirm the instance is awake.
-7. Optional: wire in Supabase/Sheets by updating `save_booking` once you have API keys.
+1. Install the Vercel CLI and sign in: `npm i -g vercel` then `vercel login`.
+2. From the project root, run `vercel link` to connect this repo to a Vercel project (or connect the GitHub repo from the Vercel dashboard for Git-triggered deploys).
+3. Vercel auto-detects `Dockerfile.vercel` at the project root — no `vercel.json` is required for a single-container app. It builds the image, pushes it to the Vercel Container Registry, and deploys it as an autoscaling Vercel Function (scales to zero after ~5 minutes idle, scales back up on traffic).
+4. Add environment variables — Vercel has no `render.yaml`-style auto-generation, so set these explicitly via the CLI or **Project Settings → Environment Variables**:
+   - `vercel env add SECRET_KEY production`
+   - (optional) `vercel env add GOOGLE_SHEET_ID production`
+   - (optional) `vercel env add GOOGLE_SERVICE_ACCOUNT_JSON production` (base64 or raw JSON)
+   - (optional) `vercel env add EMAIL_SMTP_SERVER production`, plus `EMAIL_SMTP_PORT`, `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_USE_TLS` for confirmation emails
+5. Deploy to production: `vercel deploy --prod`.
+6. Point your existing domain at the new deployment without changing the domain name itself:
+   - In the Vercel dashboard, go to **Project → Settings → Domains** and add the same domain that currently points at Render.
+   - Vercel shows the DNS records to set (typically an `A`/`ALIAS` record to Vercel's IP or a `CNAME` to `cname.vercel-dns.com`).
+   - Update those records at your domain registrar/DNS provider, then remove the old record(s) pointing at Render. Only the DNS target changes — the domain name stays the same. Propagation can take minutes to hours.
+7. Confirm `/health` returns `ok` on the new domain, then decommission the Render service.
 
-_Alternative free hosts:_ Fly.io (via `fly launch`) or Railway (Docker deploy). Both accept this Dockerfile with minor config tweaks if you prefer other platforms.
+### Storage persistence on Vercel
+
+Vercel's container runtime is stateless: instances scale to zero after idle periods and don't share a filesystem across instances, so `instance/bookings.db` is **not durable** between cold starts (the same ephemeral-disk caveat Render's free tier already had, just more aggressive). Treat the built-in Google Sheets sync as required rather than optional when running on Vercel:
+
+- Configure `GOOGLE_SHEET_ID` and `GOOGLE_SERVICE_ACCOUNT_JSON` so every booking is mirrored to Sheets and SQLite is rehydrated from Sheets on each cold start (`sync_sheet_into_sqlite` already does this on app startup).
+- Without Sheets configured, bookings written to the local SQLite file can be lost the next time the container scales to zero.
+
+_Note: Vercel's Hobby (free) plan is for personal, non-commercial projects; a live business site should use the Pro plan._
