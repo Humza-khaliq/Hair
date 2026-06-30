@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies first for better layer caching
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code and assets explicitly
+COPY app.py ./
+COPY templates ./templates
+COPY static ./static
+
+# Vercel's container runtime routes to port 80 by default; it overrides this
+# via the PORT environment variable if one is set in the project settings.
+CMD ["sh", "-c", "gunicorn app:app --workers 2 --threads 4 --timeout 120 --access-logfile - --bind 0.0.0.0:${PORT:-80}"]
