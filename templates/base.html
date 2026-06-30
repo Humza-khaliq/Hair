@@ -15,7 +15,9 @@
     </div>
 <nav class="navbar">
     <div class="nav-brand">
-        <a href="{{ url_for('home') }}">The Cutfish</a>
+        <a href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="The Cutfish Barber Studio" class="nav-logo">
+        </a>
     </div>
     <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">
         <span></span>
