@@ -79,9 +79,10 @@ main {
 }
 
 .nav-logo {
-    height: 52px;
+    height: 110px;
     width: auto;
     display: block;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
 }
 
 .nav-links {
